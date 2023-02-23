@@ -91,7 +91,7 @@ interface ReactQuillState {
 
 class ReactQuill extends React.Component<ReactQuillProps, ReactQuillState> {
 
-  static displayName = 'React Quill'
+  static displayName = 'React Quill Custom'
 
   /*
   Export Quill to be able to call `register`
@@ -168,8 +168,8 @@ class ReactQuill extends React.Component<ReactQuillProps, ReactQuillState> {
   Stores the contents of the editor to be restored after regeneration.
   */
   regenerationSnapshot?: {
-    delta: DeltaStatic,
-    selection: Range,
+    delta: DeltaStatic | null,
+    selection: Range | null,
   }
 
   /*
@@ -182,6 +182,7 @@ class ReactQuill extends React.Component<ReactQuillProps, ReactQuillState> {
     super(props);
     const value = this.isControlled()? props.value : props.defaultValue;
     this.value = value ?? '';
+    console.log('Custom React Quill');
   }
 
   validateProps(props: ReactQuillProps): void {
@@ -263,10 +264,19 @@ class ReactQuill extends React.Component<ReactQuillProps, ReactQuillState> {
     // to be re-instantiated. Regenerating the editor will cause the whole tree,
     // including the container, to be cleaned up and re-rendered from scratch.
     // Store the contents so they can be restored later.
+    
+    const getDeltaSelection = () => {
+      if (this.editor) {
+        const delta = this.editor.getContents() || null;
+        const selection = this.editor.getSelection();
+        return {delta, selection};
+      }
+
+      return {delta: null, selection: null}
+    }
+
     if (this.editor && this.shouldComponentRegenerate(prevProps)) {
-      const delta = this.editor.getContents();
-      const selection = this.editor.getSelection();
-      this.regenerationSnapshot = {delta, selection};
+      this.regenerationSnapshot = getDeltaSelection();
       this.setState({generation: this.state.generation + 1});
       this.destroyEditor();
     }
@@ -274,11 +284,12 @@ class ReactQuill extends React.Component<ReactQuillProps, ReactQuillState> {
     // The component has been regenerated, so it must be re-instantiated, and
     // its content must be restored to the previous values from the snapshot.
     if (this.state.generation !== prevState.generation) {
-      const {delta, selection} = this.regenerationSnapshot!;
+      const {delta, selection} = getDeltaSelection();
       delete this.regenerationSnapshot;
+      delete this.editor;
       this.instantiateEditor();
       const editor = this.editor!;
-      editor.setContents(delta);
+      delta && editor.setContents(delta);
       postpone(() => this.setEditorSelection(editor, selection));
     }
   }
