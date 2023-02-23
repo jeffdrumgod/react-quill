@@ -284,7 +284,7 @@ class ReactQuill extends React.Component<ReactQuillProps, ReactQuillState> {
     // The component has been regenerated, so it must be re-instantiated, and
     // its content must be restored to the previous values from the snapshot.
     if (this.state.generation !== prevState.generation) {
-      const {delta, selection} = getDeltaSelection();
+      const {delta, selection} = this.regenerationSnapshot! || {};
       delete this.regenerationSnapshot;
       delete this.editor;
       this.instantiateEditor();
